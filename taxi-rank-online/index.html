@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Taxi Rank Online</title>
+  <style>
+/* === BASE THEME (must keep) === */
+:root {
+  --bg: #0b0f14;
+  --card: #121821;
+  --muted: #94a3b8;
+  --text: #e5e7eb;
+  --accent: #22d3ee;
+  --danger: #ef4444;
+  --ok: #22c55e;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background: linear-gradient(160deg,#0b0f14,#0e1320);
+  color: var(--text);
+  display: grid;
+  place-items: start center;
+}
+.container { width: 100%; max-width: 1000px; padding: 24px; gap: 16px; display: grid; }
+header { display: block; }
+.brand { font-weight: 700; letter-spacing: .4px; }
+.brand small { color: var(--muted); font-weight: 500; }
+.card { background: rgba(18,24,33,.8); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 16px; backdrop-filter: blur(6px); box-shadow: 0 10px 25px rgba(0,0,0,.25); }
+.grid { display: grid; gap: 16px; }
+.grid.cols { grid-template-columns: repeat(12, 1fr); }
+.col-4 { grid-column: span 4; }
+.col-8 { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+@media (max-width:900px){ .col-4, .col-8, .col-12 { grid-column: 1 / -1; } }
+h2 { margin: 0 0 8px; font-size: 18px; }
+h3 { margin: 8px 0; font-size: 16px; color: var(--muted); font-weight: 600; }
+input, select, button, textarea {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04); color: var(--text);
+}
+input::placeholder, textarea::placeholder { color: #7b8696; }
+button { cursor: pointer; border: 1px solid rgba(255,255,255,.12); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 12px; }
+.btn.accent { background: linear-gradient(135deg, #0891b2, #22d3ee); color: #041318; border: none; font-weight: 700; }
+.btn.ghost { background: transparent; color: var(--text); }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid rgba(255,255,255,.08); }
+.slot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px dashed rgba(255,255,255,.12); border-radius: 12px; }
+.slot strong { font-size: 14px; }
+.pill { border-radius: 999px; padding: 6px 10px; font-weight: 600; }
+.pill.ok { background: rgba(34,197,94,.12); color: #86efac; }
+.pill.bad { background: rgba(239,68,68,.12); color: #fca5a5; }
+.muted { color: var(--muted); }
+.hidden { display: none; }
+.footer { text-align: center; color: var(--muted); font-size: 12px; }
+.inline { display: inline-flex; gap: 8px; align-items: center; }
+.danger { color: #fecaca; }
+.spacer { height: 8px; }
+.list { display: grid; gap: 8px; }
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px; padding: 2px 6px; border-radius: 6px;
+  background: #0c111b; border: 1px solid rgba(255,255,255,.08); color: #cbd5e1;
+}
+
+/* === TaxiCaller-style polish (layered on top) === */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;padding:10px 14px;margin-bottom:10px
+}
+.topbar .brand{font-size:18px}
+.cta-bar{display:flex;gap:8px;align-items:center}
+.badge{padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);font-size:12px;color:var(--muted)}
+.btn.lg{padding:12px 18px;font-size:15px;border-radius:14px}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tab{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer;user-select:none}
+.tab.active{background:linear-gradient(135deg,#0b2a3a,#0e3b55);border-color:transparent}
+.section{display:none}
+.section.active{display:block}
+.list .slot{border-style:solid;border-color:rgba(255,255,255,.08)}
+.slot strong{font-size:15px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+.kpi .pill{padding:6px 12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="topbar">
+        <div class="brand">Taxi Rank Online <span class="badge">Jersey</span></div>
+        <div class="cta-bar">
+          <a class="btn ghost" href="tel:+441534000000">📞 Call Dispatch</a>
+          <span id="userEmail" class="tag">Signed out</span>
+          <button id="signOutBtn" class="btn ghost hidden">Sign out</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active" data-tab="bookTab">Book</div>
+        <div class="tab" data-tab="myTab">My Rides</div>
+        <div class="tab" data-tab="dispatchTab">Dispatch</div>
+      </div>
+    </header>
+
+    <div class="grid cols">
+      <!-- DISPATCH TAB (Profile + Dispatcher tools) -->
+      <section class="section" id="dispatchTab">
+        <!-- Auth / Profile -->
+        <section class="card col-4">
+          <h2>Sign in / Register</h2>
+          <div class="spacer"></div>
+          <div id="authBox">
+            <input id="email" type="email" placeholder="Email" />
+            <div class="spacer"></div>
+            <input id="password" type="password" placeholder="Password (min 6 chars)" />
+            <div class="spacer"></div>
+            <div class="row">
+              <button id="signInBtn" class="btn accent">Sign in</button>
+              <button id="registerBtn" class="btn ghost">Register</button>
+            </div>
+          </div>
+          <div id="profileBox" class="hidden">
+            <h3>Profile</h3>
+            <div class="row">
+              <input id="displayName" placeholder="Display name" />
+              <select id="role">
+                <option value="client">Passenger</option>
+                <option value="admin">Driver / Dispatcher</option>
+              </select>
+            </div>
+            <div class="spacer"></div>
+            <button id="saveProfileBtn" class="btn accent">Save Profile</button>
+            <div class="spacer"></div>
+            <div class="muted">
+              Role controls access: <span class="kbd">Driver/Dispatcher</span> can create windows; <span class="kbd">Passenger</span> can book/cancel.
+            </div>
+          </div>
+        </section>
+
+        <!-- Dispatcher: Create windows -->
+        <section class="card col-8" id="dispatcherSection">
+          <h2>Dispatcher: Create Ride Windows</h2>
+          <div class="muted">Pick date + time + duration. Optional fare & Stripe link.</div>
+          <div class="spacer"></div>
+          <div class="row">
+            <input id="slotDate" type="date" />
+            <input id="slotTime" type="time" />
+            <input id="slotDur" type="number" min="15" step="15" value="30" placeholder="Window (min)" />
+          </div>
+          <div class="spacer"></div>
+          <div class="row">
+            <input id="slotPrice" type="number" min="0" step="1" placeholder="Fare (£)" />
+            <input id="slotStripe" type="url" placeholder="Stripe Checkout link (optional)" />
+            <button id="createSlotBtn" class="btn accent">Create Window</button>
+          </div>
+          <div class="spacer"></div>
+          <div class="list" id="adminSlots"></div>
+        </section>
+      </section>
+
+      <!-- BOOK TAB -->
+      <section class="section active" id="bookTab">
+        <section class="card col-12">
+          <h2>Available Ride Windows</h2>
+          <div class="row">
+            <input id="filterDate" type="date" />
+            <select id="filterStatus">
+              <option value="all">All</option>
+              <option value="open" selected>Open only</option>
+              <option value="booked">Booked</option>
+            </select>
+            <button id="refreshBtn" class="btn accent">Refresh</button>
+          </div>
+          <div class="spacer"></div>
+          <div class="list" id="publicSlots"></div>
+        </section>
+      </section>
+
+      <!-- MY RIDES TAB -->
+      <section class="section" id="myTab">
+        <section class="card col-12">
+          <h2>My Rides</h2>
+          <div class="list" id="myBookings"></div>
+        </section>
+      </section>
+    </div>
+
+    <div class="footer">Made with ♥ — powered by Firebase.</div>
+  </div>
+
+  <!-- Firebase (modular) -->
+  <script type="module">
+    // 🔑 Your Firebase project config (copied from Console).
+    const firebaseConfig = {
+      apiKey: "AIzaSyBNvqdJjvRdoyi4ZVpSxR8Kul-URu5sxJY",
+      authDomain: "taxi-rank-online.firebaseapp.com",
+      projectId: "taxi-rank-online",
+      storageBucket: "taxi-rank-online.appspot.com",   // fixed
+      messagingSenderId: "4958301809",
+      appId: "1:4958301809:web:3545bd509e496a531075d0",
+      measurementId: "G-4D0P4SX6JM"
+    };
+
+    // Firebase SDKs
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js';
+    import { getFirestore, collection, doc, getDoc, setDoc, addDoc, onSnapshot, query, orderBy, serverTimestamp, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js';
+
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM helpers & elements
+    const $ = (id) => document.getElementById(id);
+    const userEmail = $('userEmail'), signOutBtn = $('signOutBtn'), authBox = $('authBox'), profileBox = $('profileBox');
+    const email = $('email'), password = $('password'), signInBtn = $('signInBtn'), registerBtn = $('registerBtn');
+    const displayName = $('displayName'), role = $('role'), saveProfileBtn = $('saveProfileBtn');
+    const slotDate = $('slotDate'), slotTime = $('slotTime'), slotDur = $('slotDur'), slotPrice = $('slotPrice'), slotStripe = $('slotStripe'), createSlotBtn = $('createSlotBtn'), adminSlots = $('adminSlots');
+    const filterDate = $('filterDate'), filterStatus = $('filterStatus'), refreshBtn = $('refreshBtn'), publicSlots = $('publicSlots'), myBookings = $('myBookings');
+
+    const fmt = (d) => new Intl.DateTimeFormat(undefined,{ dateStyle:'medium', timeStyle:'short'}).format(d);
+    const esc = (s='') => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+
+    // Tabs (Book / My Rides / Dispatch)
+    const tabEls = Array.from(document.querySelectorAll('.tab'));
+    const sections = {
+      bookTab: document.getElementById('bookTab'),
+      myTab: document.getElementById('myTab'),
+      dispatchTab: document.getElementById('dispatchTab'),
+    };
+    tabEls.forEach(t => t.addEventListener('click', () => {
+      tabEls.forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      Object.values(sections).forEach(s => s.classList.remove('active'));
+      sections[t.dataset.tab]?.classList.add('active');
+    }));
+
+    // Keep refs for showing/hiding tools
+    const dispatcherSection = document.getElementById('dispatcherSection');
+
+    let currentUser = null; // used by visibility logic
+
+    function showDispatcherTools(show){
+      if (dispatcherSection) dispatcherSection.style.display = show ? 'block' : 'none';
+    }
+
+    function setDispatchVisibility(isDriver){
+      const dispatchTabEl = tabEls.find(x => x.dataset.tab === 'dispatchTab');
+      if (!dispatchTabEl) return;
+      // Show Dispatch tab for drivers OR when signed-out (so users can sign in)
+      const shouldShow = isDriver || !currentUser;
+      dispatchTabEl.style.display = shouldShow ? 'inline-flex' : 'none';
+      // If hiding Dispatch while it's active, bounce to Book
+      if (!shouldShow && document.querySelector('.tab.active')?.dataset.tab === 'dispatchTab') {
+        tabEls.find(x => x.dataset.tab === 'bookTab')?.click();
+      }
+    }
+
+    // Auth state
+    onAuthStateChanged(auth, async (u) => {
+      currentUser = u;
+      if (u) {
+        userEmail.textContent = u.email;
+        signOutBtn.classList.remove('hidden');
+        authBox.classList.add('hidden');
+        profileBox.classList.remove('hidden');
+
+        const pRef = doc(db, 'profiles', u.uid);
+        const snap = await getDoc(pRef);
+        if (snap.exists()) {
+          const p = snap.data();
+          displayName.value = p.displayName || '';
+          role.value = p.role || 'client';
+          const isDriver = (p.role || 'client') === 'admin';
+          setDispatchVisibility(isDriver);
+          showDispatcherTools(isDriver);
+        } else {
+          await setDoc(pRef, { displayName: u.displayName || '', role: 'client', createdAt: serverTimestamp() });
+          displayName.value = u.displayName || '';
+          role.value = 'client';
+          setDispatchVisibility(false);
+          showDispatcherTools(false);
+        }
+        subscribeViews();
+      } else {
+        userEmail.textContent = 'Signed out';
+        signOutBtn.classList.add('hidden');
+        authBox.classList.remove('hidden');
+        profileBox.classList.add('hidden');
+        adminSlots.innerHTML = '';
+        publicSlots.innerHTML = '';
+        myBookings.innerHTML = '';
+        setDispatchVisibility(true);   // keep tab visible so users can sign in
+        showDispatcherTools(false);    // but hide driver tools
+      }
+    });
+
+    // Auth actions
+    signInBtn.onclick = async ()=>{ try{ await signInWithEmailAndPassword(auth, email.value, password.value);}catch(e){ alert(e.message);} }
+    registerBtn.onclick = async ()=>{ try{ await createUserWithEmailAndPassword(auth, email.value, password.value);}catch(e){ alert(e.message);} }
+    signOutBtn.onclick = ()=> signOut(auth);
+
+    // Save profile
+    saveProfileBtn.onclick = async ()=>{
+      if(!currentUser) return;
+      try{
+        await updateProfile(currentUser, { displayName: displayName.value || null });
+        await setDoc(doc(db,'profiles', currentUser.uid), { displayName: displayName.value || '', role: role.value, updatedAt: serverTimestamp() }, { merge:true });
+        alert('Profile saved.');
+        const isDriver = role.value === 'admin';
+        setDispatchVisibility(isDriver);
+        showDispatcherTools(isDriver);
+      }catch(e){ alert(e.message); }
+    };
+
+    // Create ride window
+    createSlotBtn.onclick = async ()=>{
+      if(!currentUser) return alert('Sign in first');
+      const pSnap = await getDoc(doc(db,'profiles', currentUser.uid));
+      if(!pSnap.exists() || pSnap.data().role !== 'admin') return alert('Admins only');
+
+      const date = slotDate.value, time = slotTime.value, dur = parseInt(slotDur.value||'60',10);
+      if(!date || !time) return alert('Pick date & time');
+      const start = new Date(`${date}T${time}:00`);
+      const end = new Date(start.getTime() + dur*60000);
+      const price = parseFloat(slotPrice.value || '0');
+      const stripe = slotStripe.value || '';
+
+      try{
+        await addDoc(collection(db,'slots'), { start:start.toISOString(), end:end.toISOString(), durationMin:dur, createdAt:serverTimestamp(), status:'open', price, stripe });
+        slotTime.value=''; slotStripe.value='';
+      }catch(e){ alert(e.message); }
+    };
+
+    // Render slot
+    function renderSlotItem(s, id, ctx='public'){
+      const start = new Date(s.start), end = new Date(s.end);
+      const booked = s.status === 'booked';
+      const price = s.price ? `£${s.price}` : 'Fare TBD';
+      const label = `${fmt(start)} → ${fmt(end)} • window ${s.durationMin} min`;
+      const who = s.clientName ? ` by ${esc(s.clientName)}` : '';
+      const rideInfo = s.pickup || s.dropoff ? `<div class="muted">📍 ${esc(s.pickup||'Pickup tbc')} → ${esc(s.dropoff||'Dropoff tbc')} ${s.pax?`• ${s.pax} pax`:''}</div>` : '';
+      const wrap = document.createElement('div'); wrap.className = 'slot';
+      wrap.innerHTML = `
+        <div>
+          <strong>${label}</strong>
+          <div class="muted">${price} <span class="pill ${booked? 'bad':'ok'}">${booked?'Booked':'Open'}</span> ${who}</div>
+          ${rideInfo}
+        </div>
+        <div class="inline">
+          ${ctx==='admin' ? `<button data-id="${id}" data-act="delete" class="btn ghost danger">Delete</button>`: ''}
+          ${!booked && ctx==='public' ? `<button data-id="${id}" data-act="book" class="btn accent">Book Ride</button>`: ''}
+          ${booked && s.clientId === (currentUser?.uid||'') ? `<button data-id="${id}" data-act="cancel" class="btn ghost">Cancel</button>`: ''}
+          ${s.stripe && !booked ? `<a class="btn ghost" href="${s.stripe}" target="_blank" rel="noopener">Pay</a>`: ''}
+        </div>`;
+      return wrap;
+    }
+
+    // Live views
+    let unsubPublic=null, unsubAdmin=null, unsubMine=null;
+    function subscribeViews(){
+      if (!currentUser) return;
+      const today = filterDate.value ? new Date(filterDate.value+'T00:00:00') : new Date(Date.now()-24*3600*1000);
+
+      const qPublic = query(collection(db,'slots'), orderBy('start'));
+      unsubPublic && unsubPublic();
+      unsubPublic = onSnapshot(qPublic, (snap)=>{
+        publicSlots.innerHTML = '';
+        const status = filterStatus.value;
+        snap.docs
+          .map(d=>({ id:d.id, ...d.data() }))
+          .filter(s=> new Date(s.start) >= today)
+          .filter(s=> status==='all' ? true : status==='open' ? s.status==='open' : s.status==='booked')
+          .forEach(s=> publicSlots.appendChild(renderSlotItem(s, s.id, 'public')));
+      });
+
+      unsubAdmin && unsubAdmin();
+      unsubAdmin = onSnapshot(collection(db,'profiles'), async ()=>{
+        const p = await getDoc(doc(db,'profiles', currentUser.uid));
+        if (p.exists() && p.data().role === 'admin'){
+          const qAdmin = query(collection(db,'slots'), orderBy('start'));
+          unsubAdmin = onSnapshot(qAdmin, (snap)=>{
+            adminSlots.innerHTML = '';
+            snap.docs.map(d=>({ id:d.id, ...d.data() }))
+              .forEach(s=> adminSlots.appendChild(renderSlotItem(s, s.id, 'admin')));
+          });
+        } else {
+          adminSlots.innerHTML = '<div class="muted">You are not a dispatcher.</div>';
+        }
+      });
+
+      const qMine = query(collection(db,'slots'), orderBy('start'));
+      unsubMine && unsubMine();
+      unsubMine = onSnapshot(qMine, (snap)=>{
+        myBookings.innerHTML = '';
+        snap.docs.map(d=>({ id:d.id, ...d.data()}))
+          .filter(s=> s.clientId === (currentUser?.uid||''))
+          .forEach(s=> myBookings.appendChild(renderSlotItem(s, s.id, 'mine')));
+      });
+    }
+
+    // Actions
+    document.body.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const id = btn.dataset.id, act = btn.dataset.act; if(!id||!act) return;
+      const ref = doc(db,'slots', id);
+      const snap = await getDoc(ref); if(!snap.exists()) return alert('Window missing');
+      const data = snap.data();
+
+      if (act==='book'){
+        if (!currentUser) return alert('Sign in to book');
+        if (data.status==='booked') return alert('Already booked');
+        const p = await getDoc(doc(db,'profiles', currentUser.uid));
+        const name = p.exists()? (p.data().displayName || currentUser.email) : currentUser.email;
+        const pickup = prompt('Pickup location'); if (pickup===null) return;
+        const dropoff = prompt('Dropoff location'); if (dropoff===null) return;
+        const pax = prompt('Passengers (number)', '1'); if (pax===null) return;
+        const notes = prompt('Notes for driver (optional)','');
+        await updateDoc(ref, {
+          status:'booked', clientId: currentUser.uid, clientName: name, bookedAt: serverTimestamp(),
+          pickup: pickup||'', dropoff: dropoff||'', pax: parseInt(pax||'1',10), notes: notes||''
+        });
+        if (data.stripe) window.open(data.stripe, '_blank','noopener');
+      }
+      if (act==='cancel'){
+        if (data.clientId !== (currentUser?.uid||'')) return alert('Not your booking');
+        await updateDoc(ref, { status:'open', clientId: null, clientName: null, bookedAt: null, pickup:null, dropoff:null, pax:null, notes:null });
+      }
+      if (act==='delete'){
+        const ok = confirm('Delete ride window?'); if (!ok) return;
+        await deleteDoc(ref);
+      }
+    });
+
+    // Filters
+    refreshBtn.onclick = subscribeViews;
+  </script>
+</body>
+</html>
